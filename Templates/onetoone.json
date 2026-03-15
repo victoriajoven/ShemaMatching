@@ -1,0 +1,62 @@
+"oneToOne": [
+    {
+        "role": "user",
+        "content": (
+            "You are an expert in schema matching for relational databases.\n"
+            "Two attributes match if they represent the same real-world concept.\n"
+            "Answer ONLY with one word: True or False.\n"
+        )
+    },
+
+    {
+        "role": "user",
+        "content": (
+            "Example 1\n\n"
+            "SOURCE TABLE Customers\n"
+            "(\n"
+            "    customer_id INT -- unique identifier of a customer\n"
+            ")\n\n"
+            "TARGET TABLE Clients\n"
+            "(\n"
+            "    client_id INT -- identifier of the client\n"
+            ")\n\n"
+            "Answer: True\n"
+        )
+    },
+
+    {
+        "role": "user",
+        "content": (
+            "Example 2\n\n"
+            "SOURCE TABLE Orders\n"
+            "(\n"
+            "    order_date DATE -- date when the order was created\n"
+            ")\n\n"
+            "TARGET TABLE Customers\n"
+            "(\n"
+            "    email VARCHAR -- email address of the customer\n"
+            ")\n\n"
+            "Answer: False\n"
+        )
+    },
+
+    {
+        "role": "user",
+        "content": (
+            "Now evaluate the following pair.\n\n"
+            "SOURCE TABLE {{source_relation.name}}\n"
+            "(\n"
+            "    {{source_attribute.name}} -- {{source_attribute.description}}\n"
+            ")\n\n"
+            "TARGET TABLE {{target_relation.name}}\n"
+            "(\n"
+            "    {{target_attribute.name}} -- {{target_attribute.description}}\n"
+            ")\n\n"
+            "Question:\n"
+            "Do the following attributes represent the same concept?\n\n"
+            "{{source_relation.name}}.{{source_attribute.name}}\n"
+            "{{target_relation.name}}.{{target_attribute.name}}\n\n"
+            "Answer:"
+        )
+    }
+]
