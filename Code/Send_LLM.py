@@ -5,10 +5,10 @@ from typing import Any, Dict, List
 import tenacity
 import torch
 
-from .config import config
-from .errors import NotDoneException
-from .models import Answer, Parameters, Prompt
-from .storage import store_answer, store_chatcompletion, get_answers_by_prompt
+from config import config
+from errors import NotDoneException
+from models import Answer, Parameters, Prompt
+from storage import store_answer, store_chatcompletion, get_answers_by_prompt
 
 
 

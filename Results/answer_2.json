@@ -1,0 +1,11 @@
+{
+  "attributes": {
+    "tableA": "users",
+    "columnA": "id",
+    "tableB": "customers",
+    "columnB": "customer_id"
+  },
+  "index": 2,
+  "answer": "Output: {\"match\": true} {\"match\": true}",
+  "valid": true
+}
