@@ -1,5 +1,6 @@
 # main.py
 
+import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from Send_LLM import send_prompts
@@ -113,13 +114,22 @@ def main():
     # Modelo LLM
     model_name = "Qwen/Qwen2.5-3B-Instruct"
 
+
+
+    print(torch.__version__)
+    print(torch.cuda.is_available())
+    print(torch.version.cuda)
+
     tokenizer = AutoTokenizer.from_pretrained(model_name)
+
 
     llm_model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        device_map="auto",
-        torch_dtype="auto"
-    )
+        torch_dtype=torch.float16,
+    ).to("cuda")
+
+
+    print(next(llm_model.parameters()).device)
 
     parameters = Parameters(
         model=llm_model,
