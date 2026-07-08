@@ -1,14 +1,12 @@
 # main.py
 
-import asyncio
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from Send_LLM import send_prompts
 from models import Parameters, Prompt
 
-# Assumimos que ya tienes importado:
-# Parameters, Prompt, Answer
-# send_prompts, build_fewshot_prompt, process_prompt_list, etc.
+from sentence_transformers import SentenceTransformer
+from sklearn.neighbors import NearestNeighbors
 
 
 # -------------------------------------
@@ -17,12 +15,16 @@ from models import Parameters, Prompt
 
 db1 = {
     "users": ["id", "email", "name"],
-    "orders": ["order_id", "date", "amount"]
+    "orders": ["order_id", "date", "amount"],
+    "products": ["product_id", "name", "price"],
+    "payments": ["payment_id", "order_id", "payment_method", "status"]
 }
 
 db2 = {
     "customers": ["customer_id", "email_address", "full_name"],
-    "purchases": ["purchase_id", "timestamp", "total"]
+    "purchases": ["purchase_id", "timestamp", "total"],
+    "items": ["item_id", "item_name", "unit_price"],
+    "transactions": ["transaction_id", "purchase_id", "method", "state"]
 }
 
 # -------------------------------------
@@ -40,18 +42,43 @@ fewshot_examples = [
     }
 ]
 
-# -------------------------------------
-# GENERADOR DE PROMPTS PARA TODAS LAS COMBINACIONES
-# -------------------------------------
 
-def build_schema_prompts(db1, db2):
+def build_schema_prompts(
+    db1,
+    db2,
+    table_knn_index,
+    embedding_model,
+    table_names,
+    k_tables=3
+):
 
     prompts = []
-    
+
     for tableA, colsA in db1.items():
+
+        # Embedding de la tabla origen
+        tableA_vector = embedding_model.encode([tableA])
+
+        # Obtener tablas similares de db2
+        distances, indices = table_knn_index.kneighbors(
+            tableA_vector,
+            n_neighbors=min(k_tables, len(table_names))
+        )
+
+        nearest_tables = [
+            table_names[idx]
+            for idx in indices[0]
+        ]
+
+        print(f"\nTabla origen: {tableA}")
+        print(f"Tablas vecinas: {nearest_tables}")
+
         for colA in colsA:
 
-            for tableB, colsB in db2.items():
+            for tableB in nearest_tables:
+
+                colsB = db2[tableB]
+
                 for colB in colsB:
 
                     input_text = (
@@ -83,18 +110,19 @@ def build_schema_prompts(db1, db2):
 
 def main():
 
-    # Cargar modelo Qwen local
+    # Modelo LLM
     model_name = "Qwen/Qwen2.5-3B-Instruct"
 
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(
+
+    llm_model = AutoModelForCausalLM.from_pretrained(
         model_name,
         device_map="auto",
         torch_dtype="auto"
     )
 
     parameters = Parameters(
-        model=model,
+        model=llm_model,
         tokenizer=tokenizer,
         max_new_tokens=50,
         temperature=0.2,
@@ -103,15 +131,58 @@ def main():
         num_return_sequences=3
     )
 
-    # Construir todos los prompts para DB1×DB2
-    prompts = build_schema_prompts(db1, db2)
+    # ---------------------------------
+    # Embeddings para tablas
+    # ---------------------------------
 
-    # Ejecutar pipeline
-    answers = send_prompts(parameters, prompts)
+    embedding_model = SentenceTransformer(
+        "all-MiniLM-L6-v2"
+    )
 
+    table_names = list(db2.keys())
+
+    table_vectors = embedding_model.encode(table_names)
+
+    table_knn_index = NearestNeighbors(
+        metric="cosine"
+    )
+
+    table_knn_index.fit(table_vectors)
+
+    # ---------------------------------
+    # Generar prompts
+    # ---------------------------------
+
+    prompts = build_schema_prompts(
+        db1,
+        db2,
+        table_knn_index,
+        embedding_model,
+        table_names,
+        k_tables=2  # db2 tiene solo 2 tablas
+    )
+
+    print(f"\nPrompts generados: {len(prompts)}")
+
+    # ---------------------------------
+    # Ejecutar modelo
+    # ---------------------------------
+
+    answers = send_prompts(
+        parameters,
+        prompts
+    )
+
+    # ---------------------------------
     # Mostrar resultados
+    # ---------------------------------
+
     for ans in answers:
-        print(f"{ans.attributes} → {ans.answer} → VALID={ans.valid}")
+        print(
+            f"{ans.attributes} -> "
+            f"{ans.answer} -> "
+            f"VALID={ans.valid}"
+        )
 
 
 # -------------------------------------
