@@ -3,6 +3,8 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+import time
+
 from Send_LLM import send_prompts
 from models import Parameters, Prompt
 
@@ -177,7 +179,7 @@ def main():
     # ---------------------------------
     # Ejecutar modelo
     # ---------------------------------
-
+    inicio = time.time()
     answers = send_prompts(
         parameters,
         prompts
@@ -186,6 +188,10 @@ def main():
     # ---------------------------------
     # Mostrar resultados
     # ---------------------------------
+
+    fin = time.time()
+
+    print(f"Tiempo transcurrido: {fin - inicio:.4f} segundos")
 
     for ans in answers:
         print(
